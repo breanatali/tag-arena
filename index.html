@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tag Arena</title>
+  </head>
+  <body>
+    <!-- The 3D canvas gets injected here by main.js -->
+    <div id="app"></div>
+
+    <!-- HUD: plain HTML floating over the game -->
+    <div id="hud">
+      <h1>TAG ARENA</h1>
+      <div id="role" class="runner">🏃 RUN!</div>
+      <div id="timer">0.0s</div>
+      <div id="tags">Tags: 0</div>
+      <div id="help">Click the game to look around &bull; WASD to move &bull; Space to jump &bull; Click a tree to swing &bull; SHIFT / C to climb the vine! (ESC frees your mouse)</div>
+    </div>
+
+    <!-- Flash message on every tag ("TAGGED! You're it!") -->
+    <div id="flash" class="hidden"></div>
+
+    <!-- Shown when the chaser catches you -->
+    <div id="banner" class="hidden">
+      <h2>CAUGHT!</h2>
+      <p>You survived <span id="final-time">0</span> seconds</p>
+      <p>Press R to run again</p>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

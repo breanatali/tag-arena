@@ -1,0 +1,110 @@
+/* TAG ARENA styles — the HUD is plain HTML/CSS floating over the 3D canvas */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Trebuchet MS', Verdana, sans-serif;
+  background: #87ceeb;
+}
+
+#app canvas {
+  display: block; /* removes the tiny gap under the canvas */
+}
+
+#hud {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  pointer-events: none; /* clicks pass through to the game */
+  user-select: none;
+}
+
+#hud h1 {
+  font-size: 28px;
+  letter-spacing: 3px;
+}
+
+#timer {
+  font-size: 40px;
+  font-weight: bold;
+  margin-top: 4px;
+}
+
+#role {
+  font-size: 30px;
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+#role.runner {
+  color: #8db9ff;
+}
+
+#role.tagger {
+  color: #ff8d8d;
+}
+
+#tags {
+  font-size: 18px;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+
+#help {
+  margin-top: 8px;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+#flash {
+  position: fixed;
+  top: 38%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 52px;
+  font-weight: bold;
+  color: #ffe27a;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  user-select: none;
+}
+
+#flash.hidden {
+  display: none;
+}
+
+#banner {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  text-align: center;
+}
+
+#banner.hidden {
+  display: none;
+}
+
+#banner h2 {
+  font-size: 64px;
+  letter-spacing: 6px;
+  color: #ff5b5b;
+}
+
+#banner p {
+  font-size: 20px;
+  margin-top: 12px;
+}
