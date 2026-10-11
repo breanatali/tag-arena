@@ -153,60 +153,137 @@ addCrate(-10, 40, 3);
 addCrate(45, -30, 2);
 addCrate(-50, 30, 2);
 
-// ---------------- Gorillas (no legs — all arms, like the real thing) ----------------
-function makeGorilla(color) {
+// ---------------- Gorillas v2: better looking, still no legs ----------------
+// Every gorilla is built from code parts, so ANYTHING is customizable.
+// config = { fur, accessory: 'none'|'cap'|'shades'|'partyhat',
+//            shorts: 0x…|null, name: null (names arrive with multiplayer) }
+const RED = 0xe23b3b; // "it" signal — red arms + ground ring, never the fur itself
+
+function makeGorilla(config) {
   const g = new THREE.Group();
-  const fur = new THREE.MeshStandardMaterial({ color });
-  const dark = new THREE.MeshStandardMaterial({ color: 0x201510 });
-  const white = new THREE.MeshStandardMaterial({ color: 0xffffff });
+  const furMat = new THREE.MeshStandardMaterial({ color: config.fur, roughness: 0.95 });
+  const bellyMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(config.fur).lerp(new THREE.Color(0xc9a876), 0.45),
+    roughness: 0.95,
+  });
+  const armMat = new THREE.MeshStandardMaterial({ color: config.fur, roughness: 0.95 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x1c1410, roughness: 0.9 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
 
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.7, 18, 14), fur);
-  body.position.y = 1.0;
-  body.scale.set(1, 1.15, 0.9);
-
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 18, 14), fur);
-  head.position.y = 1.9;
-
-  const snout = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), dark);
-  snout.position.set(0, 1.8, 0.36);
-  snout.scale.set(1.2, 0.8, 0.8);
-
-  for (const side of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), white);
-    eye.position.set(side * 0.18, 1.97, 0.38);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), dark);
-    pupil.position.set(side * 0.18, 1.97, 0.47);
-    g.add(eye, pupil);
-  }
-
-  const armGeo = new THREE.CapsuleGeometry(0.17, 1.4, 4, 10);
-  armGeo.translate(0, -0.7, 0);
-  const armL = new THREE.Mesh(armGeo, fur);
-  armL.position.set(-0.85, 1.45, 0);
-  const armR = new THREE.Mesh(armGeo, fur);
-  armR.position.set(0.85, 1.45, 0);
-
-  for (const m of [body, head, snout, armL, armR]) {
+  function part(geo, mat, x, y, z, parent) {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
     m.castShadow = true;
-    g.add(m);
+    (parent || g).add(m);
+    return m;
   }
+
+  // Torso: big barrel, hunched forward like a real gorilla
+  const torso = part(new THREE.SphereGeometry(0.75, 20, 16), furMat, 0, 1.05, 0);
+  torso.scale.set(1.05, 1.25, 0.95);
+  torso.rotation.x = 0.16;
+
+  // Lighter belly patch
+  const belly = part(new THREE.SphereGeometry(0.55, 16, 12), bellyMat, 0, 0.95, 0.4);
+  belly.scale.set(0.92, 1.1, 0.55);
+
+  // Head in its own group so accessories anchor to it
+  const headG = new THREE.Group();
+  headG.position.set(0, 2.02, 0.16);
+  g.add(headG);
+  const head = part(new THREE.SphereGeometry(0.44, 20, 16), furMat, 0, 0, 0, headG);
+  head.scale.set(1, 0.92, 0.95);
+  const brow = part(new THREE.SphereGeometry(0.3, 12, 8), furMat, 0, 0.14, 0.3, headG);
+  brow.scale.set(1.3, 0.42, 0.7); // heavy brow ridge = instant gorilla
+  const muzzle = part(new THREE.SphereGeometry(0.2, 12, 10), bellyMat, 0, -0.12, 0.34, headG);
+  muzzle.scale.set(1.3, 0.75, 0.9);
+  part(new THREE.SphereGeometry(0.07, 8, 6), dark, 0, -0.07, 0.5, headG); // nose
+  for (const side of [-1, 1]) {
+    part(new THREE.SphereGeometry(0.1, 10, 8), white, side * 0.16, 0.06, 0.35, headG);
+    part(new THREE.SphereGeometry(0.045, 8, 6), dark, side * 0.16, 0.06, 0.43, headG);
+    const ear = part(new THREE.SphereGeometry(0.11, 10, 8), furMat, side * 0.42, 0.03, 0, headG);
+    ear.scale.set(0.5, 1, 0.8);
+  }
+
+  // Arms: long, angled slightly out, with knuckle fists that swing along
+  const armGeo = new THREE.CapsuleGeometry(0.18, 1.5, 4, 10);
+  armGeo.translate(0, -0.75, 0); // pivot at the shoulder
+  const knuckleGeo = new THREE.SphereGeometry(0.23, 12, 10);
+  knuckleGeo.scale(1, 0.75, 1.15);
+  function makeArm(side) {
+    const arm = new THREE.Mesh(armGeo, armMat);
+    arm.position.set(side * 0.92, 1.55, 0.05);
+    arm.rotation.z = side * -0.1;
+    arm.castShadow = true;
+    const fist = new THREE.Mesh(knuckleGeo, armMat);
+    fist.position.set(0, -1.58, 0.06);
+    fist.castShadow = true;
+    arm.add(fist); // child of the arm → follows its swing
+    g.add(arm);
+    return arm;
+  }
+  const armL = makeArm(-1);
+  const armR = makeArm(1);
+
+  // Shorts, for the Megabonk look 😄
+  if (config.shorts != null) {
+    const shorts = part(
+      new THREE.CylinderGeometry(0.62, 0.72, 0.5, 14),
+      new THREE.MeshStandardMaterial({ color: config.shorts, roughness: 0.9 }),
+      0, 0.42, 0
+    );
+    shorts.scale.set(1.08, 1, 0.95);
+  }
+
+  addAccessory(headG, config.accessory);
+
   scene.add(g);
-  return { group: g, armL, armR, furMats: [fur] };
+  return { group: g, headG, armL, armR, armMat, furMat, config };
 }
 
-function paintGorilla(gorilla, hex) {
-  for (const m of gorilla.furMats) m.color.setHex(hex);
+function addAccessory(headG, kind) {
+  if (!kind || kind === 'none') return;
+  function bit(geo, color, x, y, z, rough) {
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness: rough == null ? 0.8 : rough }));
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    headG.add(m);
+    return m;
+  }
+  if (kind === 'cap') {
+    bit(new THREE.SphereGeometry(0.3, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0xd23b3b, 0, 0.3, 0);
+    const brim = bit(new THREE.CylinderGeometry(0.3, 0.3, 0.06, 14), 0xd23b3b, 0, 0.3, 0.22);
+    brim.scale.set(1, 1, 1.5);
+    bit(new THREE.SphereGeometry(0.07, 8, 6), 0xd23b3b, 0, 0.62, 0);
+  } else if (kind === 'shades') {
+    for (const side of [-1, 1]) {
+      bit(new THREE.BoxGeometry(0.17, 0.11, 0.06), 0x111111, side * 0.16, 0.06, 0.42, 0.3);
+    }
+    bit(new THREE.BoxGeometry(0.12, 0.04, 0.04), 0x111111, 0, 0.06, 0.42, 0.3); // bridge
+  } else if (kind === 'partyhat') {
+    const cone = bit(new THREE.ConeGeometry(0.18, 0.42, 12), 0x7a3fd1, 0.05, 0.55, 0);
+    cone.rotation.z = -0.18;
+    bit(new THREE.SphereGeometry(0.07, 8, 6), 0xffffff, 0.09, 0.76, 0, 0.6); // pompom
+  }
 }
 
-const BLUE = 0x2f6df6;
-const RED = 0xe23b3b;
+// Your look, remembered between visits
+const DEFAULT_LOOK = { fur: 0x4a3320, accessory: 'none', shorts: null, name: null };
+let playerLook = { ...DEFAULT_LOOK };
+try {
+  const saved = JSON.parse(localStorage.getItem('tagArenaLook'));
+  if (saved && typeof saved.fur === 'number') playerLook = { ...DEFAULT_LOOK, ...saved };
+} catch (err) { /* private mode — just use defaults */ }
+function saveLook() {
+  try { localStorage.setItem('tagArenaLook', JSON.stringify(playerLook)); } catch (err) {}
+}
 
-const playerG = makeGorilla(BLUE);
+const playerG = makeGorilla(playerLook);
 playerG.group.visible = false; // first person: your body is hidden…
-const aiG = makeGorilla(RED);
+const aiG = makeGorilla({ fur: 0x2b2b2b, accessory: 'shades', shorts: 0x27408b, name: null }); // your rival's look
 
 // …but your ARMS hang off the camera, FPS-style.
-const fpFur = new THREE.MeshStandardMaterial({ color: BLUE });
+const fpFur = new THREE.MeshStandardMaterial({ color: playerLook.fur });
 const fpArmGeo = new THREE.CapsuleGeometry(0.13, 0.85, 4, 10);
 fpArmGeo.translate(0, -0.42, 0);
 const fpArmL = new THREE.Mesh(fpArmGeo, fpFur);
@@ -214,6 +291,27 @@ fpArmL.position.set(-0.5, -0.55, -1.0);
 const fpArmR = new THREE.Mesh(fpArmGeo, fpFur);
 fpArmR.position.set(0.5, -0.55, -1.0);
 camera.add(fpArmL, fpArmR);
+
+// Live 3D preview of your gorilla, shown while the customize panel is open
+let previewG = null;
+function disposeGroup(gr) {
+  gr.traverse((o) => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m.dispose());
+  });
+}
+function refreshPreview() {
+  if (previewG) {
+    scene.remove(previewG.group);
+    disposeGroup(previewG.group); // free GPU memory — rebuilt on every tweak
+  }
+  previewG = makeGorilla(playerLook);
+  previewG.group.visible = true;
+  scene.add(previewG.group);
+}
+function updatePlayerArms() {
+  fpFur.color.setHex(playerLook.fur);
+}
 
 const player = {
   pos: new THREE.Vector3(SPAWN_P.x, 0, SPAWN_P.z), // pos.y = feet height (world Y)
@@ -243,6 +341,15 @@ const rope = new THREE.Line(ropeGeo, new THREE.LineBasicMaterial({ color: 0x4a2f
 rope.visible = false;
 rope.frustumCulled = false;
 scene.add(rope);
+
+// Pulsing red ring on the ground under whoever is "it"
+// (fur stays custom — the ring alone carries the signal)
+const tagRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.9, 1.2, 40),
+  new THREE.MeshBasicMaterial({ color: 0xff3b3b, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
+);
+tagRing.rotation.x = -Math.PI / 2;
+scene.add(tagRing);
 
 function handWorldPos(out) {
   return out.set(player.pos.x, HAND_H + player.pos.y, player.pos.z);
@@ -460,6 +567,72 @@ window.addEventListener('contextmenu', (e) => { if (controlMode === 'touch') e.p
 
 applyControlMode();
 
+// ---------------- Character customization ----------------
+// 🎨 button opens a panel; your gorilla appears in front of you as a live
+// 3D preview. Every tweak rebuilds it and saves to localStorage.
+const customizePanel = document.getElementById('customize-panel');
+const customizeBtn = document.getElementById('customize-btn');
+const furSwatches = document.getElementById('fur-swatches');
+const shortsSwatches = document.getElementById('shorts-swatches');
+
+const FUR_COLORS = [0x4a3320, 0x232323, 0x6e6e6e, 0xe8e0d0, 0x7a4a2b, 0x2f6df6, 0x2f7d3a, 0x6b4a8a];
+const SHORTS_COLORS = [null, 0x27408b, 0xd23b3b, 0x2f7d3a, 0xe8e0d0, 0x232323];
+const cssHex = (h) => '#' + h.toString(16).padStart(6, '0');
+
+function buildSwatches(el, colors, isSelected, onPick) {
+  el.innerHTML = '';
+  for (const c of colors) {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (isSelected(c) ? ' selected' : '');
+    if (c == null) {
+      b.textContent = '✕';
+      b.title = 'None';
+      b.classList.add('swatch-none');
+    } else {
+      b.style.background = cssHex(c);
+      b.title = cssHex(c);
+    }
+    b.addEventListener('click', () => onPick(c));
+    el.appendChild(b);
+  }
+}
+function refreshSwatches() {
+  buildSwatches(furSwatches, FUR_COLORS, (c) => c === playerLook.fur, (c) => {
+    playerLook.fur = c;
+    applyLookChange();
+  });
+  buildSwatches(shortsSwatches, SHORTS_COLORS, (c) => c === playerLook.shorts, (c) => {
+    playerLook.shorts = c;
+    applyLookChange();
+  });
+  document.querySelectorAll('#acc-buttons button').forEach((b) => {
+    b.classList.toggle('selected', b.dataset.acc === playerLook.accessory);
+  });
+}
+function applyLookChange() {
+  saveLook();
+  updatePlayerArms();
+  refreshSwatches();
+  refreshPreview();
+}
+document.querySelectorAll('#acc-buttons button').forEach((b) => {
+  b.addEventListener('click', () => {
+    playerLook.accessory = b.dataset.acc;
+    applyLookChange();
+  });
+});
+
+customizeBtn.addEventListener('click', () => {
+  if (document.pointerLockElement) document.exitPointerLock(); // need the mouse for the panel
+  refreshSwatches();
+  refreshPreview();
+  customizePanel.classList.remove('hidden');
+});
+document.getElementById('customize-close').addEventListener('click', () => {
+  customizePanel.classList.add('hidden');
+  if (previewG) previewG.group.visible = false;
+});
+
 // ---------------- Game state ----------------
 let playerIsTagger = false;
 let graceT = 0;
@@ -482,14 +655,11 @@ function updateRoleUI() {
   if (playerIsTagger) {
     roleEl.textContent = "🦍 YOU'RE IT!";
     roleEl.className = 'tagger';
-    paintGorilla(aiG, BLUE);
-    fpFur.color.setHex(RED);
   } else {
     roleEl.textContent = '🏃 RUN!';
     roleEl.className = 'runner';
-    paintGorilla(aiG, RED);
-    fpFur.color.setHex(BLUE);
   }
+  updatePlayerArms();
 }
 
 function onTag() {
@@ -637,6 +807,21 @@ function update(dt) {
   climbUpBtn.classList.toggle('hidden', !swinging);
   climbDownBtn.classList.toggle('hidden', !swinging);
 
+  // Your gorilla preview, standing in front of you while customizing
+  if (previewG && previewG.group.visible) {
+    const px = camera.position.x - Math.sin(yaw) * 5.5;
+    const pz = camera.position.z - Math.cos(yaw) * 5.5;
+    previewG.group.position.set(px, groundHeight(px, pz), pz);
+    faceToward(previewG.group, Math.sin(yaw), Math.cos(yaw), dt, 6);
+    animateArms(previewG, elapsed * 0.6);
+  }
+
+  // Pulsing ring under whoever is "it"
+  const taggerPos = playerIsTagger ? player.pos : ai.pos;
+  tagRing.position.set(taggerPos.x, groundHeight(taggerPos.x, taggerPos.z) + 0.15, taggerPos.z);
+  const pulse = 1 + Math.sin(elapsed * 6) * 0.07;
+  tagRing.scale.set(pulse, pulse, 1);
+
   // --- AI ---
   ai.wanderT += dt;
   if (!playerIsTagger) {
@@ -672,7 +857,8 @@ function update(dt) {
   // --- Tag check: "air" now means above the TERRAIN, not above y=0 ---
   const hdist = Math.hypot(player.pos.x - ai.pos.x, player.pos.z - ai.pos.z);
   const aboveGround = player.pos.y - groundHeight(player.pos.x, player.pos.z);
-  if (graceT <= 0 && hdist < 1.5 && aboveGround < 2.5) {
+  const customizing = !customizePanel.classList.contains('hidden');
+  if (!customizing && graceT <= 0 && hdist < 1.5 && aboveGround < 2.5) {
     onTag();
   }
 }

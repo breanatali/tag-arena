@@ -210,3 +210,111 @@ body {
   background: rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
+
+#customize-btn {
+  position: fixed;
+  top: 16px;
+  right: 76px;
+  z-index: 30;
+  width: 48px;
+  height: 48px;
+  font-size: 24px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+#customize-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  background: rgba(20, 24, 20, 0.93);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 20px 24px;
+  color: white;
+  min-width: 300px;
+  max-width: 92vw;
+  font-family: 'Trebuchet MS', Verdana, sans-serif;
+}
+
+#customize-panel h2 {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.cust-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.cust-row > span {
+  width: 52px;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.swatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  padding: 0;
+  font-size: 16px;
+  color: #999;
+}
+
+.swatch.selected {
+  border-color: #ffe27a;
+  box-shadow: 0 0 8px #ffe27a;
+}
+
+.swatch-none {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#acc-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#acc-buttons button {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#acc-buttons button.selected {
+  border-color: #ffe27a;
+  box-shadow: 0 0 8px #ffe27a;
+}
+
+#customize-close {
+  margin-top: 8px;
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 10px;
+  border: none;
+  background: #2f6df6;
+  color: white;
+  cursor: pointer;
+}

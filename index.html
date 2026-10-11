@@ -32,6 +32,20 @@
     <!-- Toggle between PC and touch controls (remembers your choice) -->
     <button id="controls-toggle" title="Switch controls">&#127918;</button>
 
+    <!-- Customize your gorilla -->
+    <button id="customize-btn" title="Customize your gorilla">🎨</button>
+
+    <!-- Character customization panel -->
+    <div id="customize-panel" class="hidden">
+      <h2>🎨 Your Gorilla</h2>
+      <div class="cust-row"><span>Fur</span><div id="fur-swatches" class="swatches"></div></div>
+      <div class="cust-row"><span>Gear</span><div id="acc-buttons">
+        <button data-acc="none" class="selected">None</button><button data-acc="cap">🧢 Cap</button><button data-acc="shades">🕶️ Shades</button><button data-acc="partyhat">🎉 Party hat</button>
+      </div></div>
+      <div class="cust-row"><span>Shorts</span><div id="shorts-swatches" class="swatches"></div></div>
+      <button id="customize-close">Done</button>
+    </div>
+
     <!-- Shown when the chaser catches you -->
     <div id="banner" class="hidden">
       <h2>CAUGHT!</h2>
