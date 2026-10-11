@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Tag Arena</title>
   </head>
   <body>
@@ -20,6 +20,17 @@
 
     <!-- Flash message on every tag ("TAGGED! You're it!") -->
     <div id="flash" class="hidden"></div>
+
+    <!-- Touch controls: joystick + buttons (visible in touch mode) -->
+    <div id="touch-ui" class="hidden">
+      <div id="joystick"><div id="stick"></div></div>
+      <div id="btn-jump" class="touch-btn">JUMP</div>
+      <div id="btn-up" class="touch-btn climb hidden">&#9650;</div>
+      <div id="btn-down" class="touch-btn climb hidden">&#9660;</div>
+    </div>
+
+    <!-- Toggle between PC and touch controls (remembers your choice) -->
+    <button id="controls-toggle" title="Switch controls">&#127918;</button>
 
     <!-- Shown when the chaser catches you -->
     <div id="banner" class="hidden">

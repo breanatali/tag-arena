@@ -264,17 +264,18 @@ const GAME_KEYS = [
   'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
   'Space', 'ShiftLeft', 'ShiftRight', 'KeyC',
 ];
+function doJump() {
+  if (player.swing) releaseSwing();
+  else if (player.grounded) {
+    player.vel.y = JUMP_V;
+    player.grounded = false;
+  }
+}
 window.addEventListener('keydown', (e) => {
   if (GAME_KEYS.includes(e.code)) e.preventDefault();
   if (e.repeat) return;
   keys[e.code] = true;
-  if (e.code === 'Space') {
-    if (player.swing) releaseSwing();
-    else if (player.grounded) {
-      player.vel.y = JUMP_V;
-      player.grounded = false;
-    }
-  }
+  if (e.code === 'Space') doJump();
 });
 window.addEventListener('keyup', (e) => {
   keys[e.code] = false;
@@ -283,6 +284,7 @@ window.addEventListener('keyup', (e) => {
 let yaw = -Math.PI / 2;
 let pitch = 0;
 renderer.domElement.addEventListener('click', () => {
+  if (controlMode !== 'pc') return; // touch mode needs no pointer lock
   if (document.pointerLockElement !== renderer.domElement) {
     renderer.domElement.requestPointerLock();
   }
@@ -296,13 +298,13 @@ document.addEventListener('mousemove', (e) => {
 
 const raycaster = new THREE.Raycaster();
 const mouseNDC = new THREE.Vector2();
-window.addEventListener('pointerdown', (e) => {
-  if (document.pointerLockElement !== renderer.domElement) return;
+// Grabbing a vine, shared by PC clicks and touch taps.
+function tryGrab(clientX, clientY) {
   if (player.swing) {
     releaseSwing();
     return;
   }
-  mouseNDC.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+  mouseNDC.set((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1);
   raycaster.setFromCamera(mouseNDC, camera);
   const hits = raycaster.intersectObjects(grabbables, false);
   if (hits.length > 0 && hits[0].distance < 80) {
@@ -315,7 +317,148 @@ window.addEventListener('pointerdown', (e) => {
     };
     rope.visible = true;
   }
+}
+window.addEventListener('pointerdown', (e) => {
+  if (controlMode !== 'pc') return; // touch taps are handled by the touch code below
+  if (document.pointerLockElement !== renderer.domElement) return;
+  tryGrab(e.clientX, e.clientY);
 });
+
+// ---------------- Touch controls + PC/touch toggle ----------------
+// Phones have no keyboard/mouse, so touch mode gives you:
+//   left thumb  = virtual joystick (run)
+//   right thumb = drag to look, quick tap to grab a tree
+//   buttons     = JUMP, and climb ▲▼ while swinging
+// The toggle remembers your choice in localStorage.
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+let controlMode = null;
+try {
+  controlMode = localStorage.getItem('tagArenaControls');
+} catch (err) { /* private mode etc. — fall through to default */ }
+if (controlMode !== 'pc' && controlMode !== 'touch') {
+  controlMode = isTouchDevice ? 'touch' : 'pc';
+}
+
+const touchUI = document.getElementById('touch-ui');
+const joystickEl = document.getElementById('joystick');
+const stickEl = document.getElementById('stick');
+const jumpBtn = document.getElementById('btn-jump');
+const climbUpBtn = document.getElementById('btn-up');
+const climbDownBtn = document.getElementById('btn-down');
+const toggleBtn = document.getElementById('controls-toggle');
+const helpEl = document.getElementById('help');
+
+const HELP_PC = 'Click the game to look around &bull; WASD to move &bull; Space to jump &bull; Click a tree to swing &bull; SHIFT / C to climb the vine! (ESC frees your mouse)';
+const HELP_TOUCH = 'Left stick to run &bull; Drag to look &bull; Tap a tree to swing &bull; JUMP button to leap &bull; &#9650; &#9660; to climb the vine!';
+
+function applyControlMode() {
+  const touch = controlMode === 'touch';
+  touchUI.classList.toggle('hidden', !touch);
+  toggleBtn.textContent = touch ? '\uD83D\uDCB1' : '\uD83C\uDFAE'; // 🖱️ : 🎮
+  toggleBtn.title = touch ? 'Switch to PC controls' : 'Switch to touch controls';
+  helpEl.innerHTML = touch ? HELP_TOUCH : HELP_PC;
+  if (!touch && document.pointerLockElement) document.exitPointerLock();
+  try {
+    localStorage.setItem('tagArenaControls', controlMode);
+  } catch (err) {}
+}
+toggleBtn.addEventListener('click', () => {
+  controlMode = controlMode === 'touch' ? 'pc' : 'touch';
+  applyControlMode();
+});
+
+// One finger can be on the joystick while another drags to look,
+// so every touch is tracked by its identifier.
+const joy = { active: false, id: null, x: 0, y: 0 };
+const look = { id: null, x: 0, y: 0, t: 0, moved: 0 };
+let touchClimbUp = false;
+let touchClimbDown = false;
+const JOY_RADIUS = 45;
+
+function moveStick(t) {
+  const r = joystickEl.getBoundingClientRect();
+  let dx = t.clientX - (r.left + r.width / 2);
+  let dy = t.clientY - (r.top + r.height / 2);
+  const len = Math.hypot(dx, dy);
+  if (len > JOY_RADIUS) {
+    dx = (dx / len) * JOY_RADIUS;
+    dy = (dy / len) * JOY_RADIUS;
+  }
+  stickEl.style.transform = `translate(${dx}px, ${dy}px)`;
+  joy.x = dx / JOY_RADIUS;
+  joy.y = dy / JOY_RADIUS;
+}
+function resetStick() {
+  joy.active = false;
+  joy.id = null;
+  joy.x = 0;
+  joy.y = 0;
+  stickEl.style.transform = 'translate(0px, 0px)';
+}
+
+joystickEl.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  joy.active = true;
+  joy.id = t.identifier;
+  moveStick(t);
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchstart', (e) => {
+  if (controlMode !== 'touch') return;
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  look.id = t.identifier;
+  look.x = t.clientX;
+  look.y = t.clientY;
+  look.t = performance.now();
+  look.moved = 0;
+}, { passive: false });
+
+window.addEventListener('touchmove', (e) => {
+  if (controlMode !== 'touch') return;
+  e.preventDefault(); // stop the page scrolling while playing
+  for (const t of e.changedTouches) {
+    if (joy.active && t.identifier === joy.id) {
+      moveStick(t);
+    } else if (t.identifier === look.id) {
+      const dx = t.clientX - look.x;
+      const dy = t.clientY - look.y;
+      look.moved += Math.abs(dx) + Math.abs(dy);
+      yaw -= dx * 0.0055;
+      pitch -= dy * 0.0055;
+      pitch = Math.max(-1.25, Math.min(1.25, pitch));
+      look.x = t.clientX;
+      look.y = t.clientY;
+    }
+  }
+}, { passive: false });
+
+function touchEnd(e) {
+  for (const t of e.changedTouches) {
+    if (joy.active && t.identifier === joy.id) resetStick();
+    if (t.identifier === look.id) {
+      // Quick tap (not a drag) = grab attempt, like clicking a tree on PC
+      if (performance.now() - look.t < 300 && look.moved < 20) {
+        tryGrab(t.clientX, t.clientY);
+      }
+      look.id = null;
+    }
+  }
+}
+window.addEventListener('touchend', touchEnd);
+window.addEventListener('touchcancel', touchEnd);
+
+jumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); doJump(); }, { passive: false });
+climbUpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchClimbUp = true; }, { passive: false });
+climbDownBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchClimbDown = true; }, { passive: false });
+for (const b of [climbUpBtn, climbDownBtn]) {
+  b.addEventListener('touchend', () => { touchClimbUp = false; touchClimbDown = false; });
+  b.addEventListener('touchcancel', () => { touchClimbUp = false; touchClimbDown = false; });
+}
+window.addEventListener('contextmenu', (e) => { if (controlMode === 'touch') e.preventDefault(); });
+
+applyControlMode();
 
 // ---------------- Game state ----------------
 let playerIsTagger = false;
@@ -416,6 +559,10 @@ function update(dt) {
   if (keys['KeyS'] || keys['ArrowDown']) move.sub(fwd);
   if (keys['KeyD'] || keys['ArrowRight']) move.add(right);
   if (keys['KeyA'] || keys['ArrowLeft']) move.sub(right);
+  if (joy.active && (joy.x !== 0 || joy.y !== 0)) {
+    move.addScaledVector(fwd, -joy.y); // push the stick up = run forward
+    move.addScaledVector(right, joy.x);
+  }
   const moving = move.lengthSq() > 0;
   if (moving) move.normalize();
 
@@ -428,10 +575,10 @@ function update(dt) {
       _tmp.copy(hv).normalize();
       hv.addScaledVector(_tmp, 18 * dt);
     }
-    if (keys['ShiftLeft'] || keys['ShiftRight']) {
+    if (keys['ShiftLeft'] || keys['ShiftRight'] || touchClimbUp) {
       s.length = Math.max(3, s.length - 8 * dt); // climb up
     }
-    if (keys['KeyC']) {
+    if (keys['KeyC'] || touchClimbDown) {
       s.length = Math.min(60, s.length + 8 * dt); // slide down
     }
     handWorldPos(_hand);
@@ -484,6 +631,11 @@ function update(dt) {
     fpArmL.rotation.x *= 0.9;
     fpArmR.rotation.x *= 0.9;
   }
+
+  // Climb buttons only make sense while swinging
+  const swinging = !!player.swing;
+  climbUpBtn.classList.toggle('hidden', !swinging);
+  climbDownBtn.classList.toggle('hidden', !swinging);
 
   // --- AI ---
   ai.wanderT += dt;

@@ -108,3 +108,105 @@ body {
   font-size: 20px;
   margin-top: 12px;
 }
+
+/* ---------- Touch controls ---------- */
+.hidden {
+  display: none !important;
+}
+
+html,
+body {
+  touch-action: none; /* stop pull-to-refresh / pinch-zoom from hijacking the game */
+}
+
+#app canvas {
+  touch-action: none;
+}
+
+#touch-ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none; /* taps pass through to the canvas, except on the controls */
+  z-index: 20;
+}
+
+#touch-ui > * {
+  pointer-events: auto;
+}
+
+#joystick {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  width: 124px;
+  height: 124px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  touch-action: none;
+}
+
+#stick {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.touch-btn {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+#btn-jump {
+  right: 24px;
+  bottom: 30px;
+  width: 92px;
+  height: 92px;
+}
+
+.touch-btn.climb {
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+}
+
+#btn-up {
+  right: 136px;
+  bottom: 96px;
+}
+
+#btn-down {
+  right: 136px;
+  bottom: 28px;
+}
+
+#controls-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 30;
+  width: 48px;
+  height: 48px;
+  font-size: 24px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
