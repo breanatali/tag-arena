@@ -155,7 +155,7 @@ addCrate(-50, 30, 2);
 
 // ---------------- Gorillas v2: better looking, still no legs ----------------
 // Every gorilla is built from code parts, so ANYTHING is customizable.
-// config = { fur, accessory: 'none'|'cap'|'shades'|'partyhat',
+// config = { fur, accessory: 'none'|'cap'|'shades'|'partyhat'|'headband'|'propeller'|'crown',
 //            shorts: 0x…|null, name: null (names arrive with multiplayer) }
 const RED = 0xe23b3b; // "it" signal — red arms + ground ring, never the fur itself
 
@@ -193,8 +193,8 @@ function makeGorilla(config) {
   g.add(headG);
   const head = part(new THREE.SphereGeometry(0.44, 20, 16), furMat, 0, 0, 0, headG);
   head.scale.set(1, 0.92, 0.95);
-  const brow = part(new THREE.SphereGeometry(0.3, 12, 8), furMat, 0, 0.14, 0.3, headG);
-  brow.scale.set(1.3, 0.42, 0.7); // heavy brow ridge = instant gorilla
+  const brow = part(new THREE.SphereGeometry(0.3, 12, 8), furMat, 0, 0.14, 0.28, headG);
+  brow.scale.set(1.3, 0.42, 0.55); // heavy brow ridge = instant gorilla (slimmed so shades sit proud)
   const muzzle = part(new THREE.SphereGeometry(0.2, 12, 10), bellyMat, 0, -0.12, 0.34, headG);
   muzzle.scale.set(1.3, 0.75, 0.9);
   part(new THREE.SphereGeometry(0.07, 8, 6), dark, 0, -0.07, 0.5, headG); // nose
@@ -256,10 +256,25 @@ function addAccessory(headG, kind) {
     brim.scale.set(1, 1, 1.5);
     bit(new THREE.SphereGeometry(0.07, 8, 6), 0xd23b3b, 0, 0.62, 0);
   } else if (kind === 'shades') {
+    // pushed forward + slimmed brow, so they sit proud of the face
     for (const side of [-1, 1]) {
-      bit(new THREE.BoxGeometry(0.17, 0.11, 0.06), 0x111111, side * 0.16, 0.06, 0.42, 0.3);
+      bit(new THREE.BoxGeometry(0.2, 0.12, 0.06), 0x111111, side * 0.16, 0.08, 0.47, 0.3);
     }
-    bit(new THREE.BoxGeometry(0.12, 0.04, 0.04), 0x111111, 0, 0.06, 0.42, 0.3); // bridge
+    bit(new THREE.BoxGeometry(0.12, 0.04, 0.04), 0x111111, 0, 0.08, 0.47, 0.3); // bridge
+  } else if (kind === 'headband') {
+    const band = bit(new THREE.TorusGeometry(0.42, 0.06, 8, 24), 0x2f8f6f, 0, 0.18, 0);
+    band.rotation.x = Math.PI / 2;
+  } else if (kind === 'propeller') {
+    bit(new THREE.SphereGeometry(0.3, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0xe8c832, 0, 0.3, 0);
+    bit(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 8), 0x8a6f4d, 0, 0.72, 0);
+    bit(new THREE.BoxGeometry(0.5, 0.03, 0.09), 0xd23b3b, 0, 0.88, 0);
+    bit(new THREE.BoxGeometry(0.09, 0.03, 0.5), 0xd23b3b, 0, 0.88, 0);
+  } else if (kind === 'crown') {
+    bit(new THREE.CylinderGeometry(0.3, 0.33, 0.22, 12), 0xe8b832, 0, 0.45, 0, 0.4);
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      bit(new THREE.ConeGeometry(0.055, 0.14, 6), 0xe8b832, Math.cos(a) * 0.28, 0.62, Math.sin(a) * 0.28, 0.4);
+    }
   } else if (kind === 'partyhat') {
     const cone = bit(new THREE.ConeGeometry(0.18, 0.42, 12), 0x7a3fd1, 0.05, 0.55, 0);
     cone.rotation.z = -0.18;
@@ -809,8 +824,9 @@ function update(dt) {
 
   // Your gorilla preview, standing in front of you while customizing
   if (previewG && previewG.group.visible) {
-    const px = camera.position.x - Math.sin(yaw) * 5.5;
-    const pz = camera.position.z - Math.cos(yaw) * 5.5;
+    // offset right so the panel (docked left) doesn't cover your gorilla
+    const px = camera.position.x - Math.sin(yaw) * 5.5 + Math.cos(yaw) * 2.0;
+    const pz = camera.position.z - Math.cos(yaw) * 5.5 - Math.sin(yaw) * 2.0;
     previewG.group.position.set(px, groundHeight(px, pz), pz);
     faceToward(previewG.group, Math.sin(yaw), Math.cos(yaw), dt, 6);
     animateArms(previewG, elapsed * 0.6);

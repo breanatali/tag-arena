@@ -228,8 +228,8 @@ body {
 #customize-panel {
   position: fixed;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  left: 24px;
+  transform: translateY(-50%);
   z-index: 40;
   background: rgba(20, 24, 20, 0.93);
   border: 2px solid rgba(255, 255, 255, 0.25);
@@ -317,4 +317,13 @@ body {
   background: #2f6df6;
   color: white;
   cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  #customize-panel {
+    left: 12px;
+    min-width: 0;
+    width: 240px;
+    padding: 14px 16px;
+  }
 }
